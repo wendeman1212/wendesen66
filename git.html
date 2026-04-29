@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Digital Equb Pro | Round Segregation | Independent Round Pots</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: linear-gradient(135deg, #e8eef4 0%, #d4dee9 100%); min-height: 100vh; }
+        .navbar { background: linear-gradient(135deg, #0a2e23, #144d34); padding: 0.6rem 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo h2 { color: #f9eec1; font-size: 0.9rem; }
+        .nav-links { display: flex; gap: 0.2rem; }
+        .nav-btn { background: transparent; border: none; color: #f0f7e6; font-size: 0.7rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 25px; cursor: pointer; }
+        .nav-btn:hover, .nav-btn.active { background: #ffefb9; color: #1a472a; }
+        .user-info { display: flex; align-items: center; gap: 6px; background: #2b5a41; padding: 3px 10px; border-radius: 25px; }
+        .user-info span { color: white; font-size: 0.7rem; }
+        .logout-btn { background: #c77d4a; border: none; padding: 3px 10px; border-radius: 20px; color: white; cursor: pointer; font-size: 0.65rem; }
+        .app-container { max-width: 1400px; margin: 0 auto; padding: 15px; }
+        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page.active-page { display: block; }
+        @keyframes fadeIn { from { opacity:0; } to{ opacity:1; } }
+        .card { background: rgba(255,255,255,0.96); border-radius: 0.8rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 0.8rem; margin-bottom: 0.8rem; }
+        .card h2 { font-size: 0.85rem; border-left: 3px solid #2b7a4b; padding-left: 8px; margin-bottom: 0.6rem; color: #1e3a2f; }
+        .admin-buttons-column { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 5px; margin-bottom: 10px; }
+        .admin-action-btn { background: #1e4d2e; color: white; border: none; padding: 5px 6px; border-radius: 20px; font-size: 0.6rem; font-weight: bold; cursor: pointer; text-align: center; }
+        .admin-action-btn:hover { background: #0f3b22; }
+        .admin-action-btn.warning { background: #e67e22; }
+        .admin-action-btn.danger { background: #c0392b; }
+        .admin-action-btn.info { background: #2980b9; }
+        .admin-action-btn.success { background: #27ae60; }
+        .form-grid { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; }
+        .input-group { flex: 1; min-width: 100px; }
+        .input-group label { font-size: 0.55rem; font-weight: 600; color: #2d5a3b; display: block; margin-bottom: 2px; }
+        select, input, button, textarea { width: 100%; padding: 5px 8px; border-radius: 25px; border: 1.5px solid #cbd5e1; font-size: 0.65rem; }
+        button { background: #1e4d2e; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #0f3b22; }
+        button.small-btn { padding: 3px 6px; font-size: 0.6rem; width: auto; }
+        .info-message { background: #eef6ea; padding: 4px 8px; border-radius: 15px; margin: 5px 0; font-size: 0.6rem; border-left: 2px solid #2b7a4b; }
+        .payment-details { background: #fff8e7; border: 1px dashed #e6b422; border-radius: 12px; padding: 8px; margin: 8px 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.6rem; }
+        th, td { padding: 4px 3px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #ecf6e8; color: #1f5438; }
+        .bank-highlight { background: linear-gradient(135deg, #fef7e0, #fff3c9); border-radius: 0.6rem; padding: 6px; font-size: 0.65rem; text-align: center; }
+        .dashboard-card { background: #f0f7ed; border-radius: 0.6rem; padding: 6px; margin-top: 5px; font-size: 0.65rem; }
+        .winner-info { background: #fef3c7; border-radius: 10px; padding: 8px; margin: 5px 0; }
+        .round-tab { display: inline-block; background: #e2e8f0; padding: 2px 8px; border-radius: 15px; font-size: 0.6rem; margin-right: 5px; cursor: pointer; }
+        .round-tab.active { background: #2b7a4b; color: white; }
+        .round-selector { margin-bottom: 10px; }
+        footer { text-align: center; margin-top: 0.8rem; padding: 0.4rem; font-size: 0.55rem; color: #2d5a3b; }
+        @media (max-width: 700px) { .navbar { flex-direction: column; gap: 5px; } .admin-buttons-column { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo"><h2>📿 Digital Equb Pro | Round <span id="currentRoundDisplay">1</span></h2></div>
+    <div class="nav-links">
+        <button class="nav-btn active" data-page="home">🏠 Home</button>
+        <button class="nav-btn" data-page="messages">💬 Messages</button>
+        <button class="nav-btn" data-page="history">📜 History</button>
+        <button class="nav-btn" data-page="about">📖 About</button>
+        <button class="nav-btn" data-page="contact">📞 Contact</button>
+    </div>
+    <div id="userInfoBar" class="user-info" style="display: none;">
+        <span id="currentUserSpan">Guest</span>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+</div>
+
+<div class="app-container">
+    <!-- LOGIN PAGE -->
+    <div id="authPage" class="page active-page">
+        <div class="card" style="max-width: 350px; margin: 0 auto;">
+            <h2>🔐 Digital Equb Access</h2>
+            <p style="font-size:0.65rem;">Admin: admin/admin123 | Member: member1/pass</p>
+            <div style="display: flex; gap: 6px; margin: 10px 0;">
+                <button id="showLoginBtn" class="small-btn" style="flex:1;">Login</button>
+                <button id="showSignupBtn" class="small-btn" style="flex:1; background: #95a5a6;">Sign Up</button>
+            </div>
+            <div id="loginFormDiv">
+                <input type="text" id="loginUsername" placeholder="Username" style="margin-bottom: 6px;">
+                <input type="password" id="loginPassword" placeholder="Password">
+                <button id="doLoginBtn" style="margin-top: 8px;">Login →</button>
+            </div>
+            <div id="signupFormDiv" style="display:none;">
+                <input type="text" id="signupName" placeholder="Full Name" style="margin-bottom: 5px;">
+                <input type="text" id="signupUsername" placeholder="Username">
+                <input type="password" id="signupPassword" placeholder="Password" style="margin-top: 5px;">
+                <input type="text" id="signupPhone" placeholder="Phone" style="margin-top: 5px;">
+                <input type="text" id="signupBankAccount" placeholder="Bank Account" style="margin-top: 5px;">
+                <button id="doSignupBtn" style="margin-top: 8px;">📝 Register</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOME PAGE -->
+    <div id="homePage" class="page">
+        <div class="card bank-highlight">🏦 CENTRAL ACCOUNT: EthioBank 1000 12345678 | Admin: +251911000000</div>
+
+        <!-- ADMIN BUTTONS -->
+        <div class="card" id="adminButtonsCard">
+            <h2>⚡ ADMIN CONTROLS</h2>
+            <div class="admin-buttons-column">
+                <button id="btnCreateEqub" class="admin-action-btn">🏗️ Create Equb</button>
+                <button id="btnApproveMember" class="admin-action-btn">✅ Approve</button>
+                <button id="btnViewMembers" class="admin-action-btn">👥 Members</button>
+                <button id="btnPendingPayments" class="admin-action-btn info">⏳ Pending</button>
+                <button id="btnAssignGuarantor" class="admin-action-btn warning">🔒 Guarantor</button>
+                <button id="btnRunPenalty" class="admin-action-btn danger">⚠️ Run Penalty</button>
+                <button id="btnLottery" class="admin-action-btn warning">🎲 Draw Winner</button>
+                <button id="btnWinnerPayout" class="admin-action-btn success">💸 Pay Winner</button>
+                <button id="btnNextRound" class="admin-action-btn success">🔄 Next Round</button>
+                <button id="btnClearData" class="admin-action-btn danger">🗑️ Clear Data</button>
+                <button id="btnDashboard" class="admin-action-btn">📊 Dashboard</button>
+            </div>
+        </div>
+
+        <!-- ROUND INFO -->
+        <div class="card"><h2>📌 Current Round: <span id="roundNumber">1</span> / <span id="totalRoundsSpan">24</span></h2>
+            <div id="roundStatus" class="info-message"></div>
+        </div>
+
+        <!-- ROUND SELECTOR FOR VIEWING ROUND POTS -->
+        <div class="card">
+            <h2>💰 Round Pot Summary (Segregated by Round)</h2>
+            <div class="round-selector" id="roundSelector"></div>
+            <div id="roundPotInfo" class="dashboard-card"></div>
+        </div>
+
+        <!-- MEMBER PAYMENT SECTION -->
+        <div class="card" id="memberPaymentCard">
+            <h2>💰 Pay for Round <span id="currentRoundForPayment">1</span></h2>
+            <div class="payment-details">
+                <p>Bank: <strong>EthioBank</strong> | Account: <strong>1000 12345678</strong> | Name: <strong>Central Admin</strong></p>
+                <p>Telebirr: <strong>+251911000000</strong></p>
+            </div>
+            <div class="form-grid">
+                <div class="input-group"><label>Amount</label><input type="number" id="paymentAmount" readonly style="background:#f0f0f0;"></div>
+                <div class="input-group"><label>Transaction Ref</label><input type="text" id="transactionRef" placeholder="Enter Reference"></div>
+                <div class="input-group"><label>Method</label><select id="paymentMethod"><option>Telebirr</option><option>Bank Transfer</option></select></div>
+                <div class="input-group"><button id="submitPaymentBtn" class="small-btn">📤 Submit Payment</button></div>
+            </div>
+            <div id="paymentStatus" class="info-message"></div>
+        </div>
+
+        <!-- MY STATUS -->
+        <div class="card"><h2>📋 My Status</h2><div id="myStatusContent">Loading...</div></div>
+
+        <!-- CREATE EQUB SECTION -->
+        <div class="card" id="createEqubSection" style="display:none;">
+            <h2>⚙️ Create Equb</h2>
+            <div class="form-grid">
+                <div class="input-group"><label>Equb Name</label><input type="text" id="equbNameInput" placeholder="Family Equb"></div>
+                <div class="input-group"><label>Frequency</label><select id="frequencySelect"><option>Weekly</option><option>Monthly</option></select></div>
+                <div class="input-group"><label>Contribution</label><input type="number" id="contributionAmount" value="500"></div>
+                <div class="input-group"><label>Rounds</label><input type="number" id="totalRounds" value="24"></div>
+                <div class="input-group"><button id="initCycleBtn" class="small-btn">Create</button></div>
+            </div>
+            <div id="cycleInfo" class="info-message"></div>
+        </div>
+
+        <!-- APPROVE MEMBER -->
+        <div class="card" id="approveMemberSection" style="display:none;">
+            <h2>✅ Approve Member</h2>
+            <div class="form-grid"><div class="input-group"><label>Pending User</label><select id="selectPendingUser"></select></div><div class="input-group"><button id="addToEqubBtn" class="small-btn">Approve</button></div></div>
+            <div id="pendingMembersList" class="info-message"></div>
+        </div>
+
+        <!-- MEMBERS TABLE -->
+        <div class="card" id="membersTableSection" style="display:none;"><h2>👥 Members</h2><table><thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Guarantor</th><th>Won</th><th>Paid Rounds</th><th>Penalty</th></tr></thead><tbody id="membersTbody"></tbody></table></div>
+
+        <!-- PENDING PAYMENTS -->
+        <div class="card" id="pendingPaymentsSection" style="display:none;"><h2>⏳ Pending Approvals</h2><div id="pendingPaymentsList"></div></div>
+
+        <!-- ASSIGN GUARANTOR -->
+        <div class="card" id="assignGuarantorSection" style="display:none;"><h2>🔒 Assign Guarantor</h2><div class="form-grid"><div class="input-group"><label>Member</label><select id="guarantorMemberSelect"></select></div><div class="input-group"><label>Guarantor</label><select id="guarantorAssignSelect"></select></div><div class="input-group"><button id="assignGuarantorBtn" class="small-btn">Assign</button></div></div><div id="guarantorStatus" class="info-message"></div></div>
+
+        <!-- LOTTERY -->
+        <div class="card" id="lotterySection" style="display:none;"><h2>🎲 Draw Winner for Round <span id="lotteryRoundNum">1</span></h2>
+            <button id="lotteryDrawBtn" class="small-btn warning">DRAW WINNER</button>
+            <div id="lotteryResult" class="info-message"></div>
+        </div>
+
+        <!-- WINNER PAYOUT -->
+        <div class="card" id="winnerPayoutSection" style="display:none;"><h2>💸 Pay Winner for Round <span id="payoutRoundNum">1</span></h2>
+            <div id="winnerInfoDisplay" class="winner-info"></div>
+            <button id="confirmPayoutBtn" class="small-btn success">✅ Mark as Paid</button>
+            <div id="payoutStatus" class="info-message"></div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div class="card" id="dashboardSection" style="display:none;"><h2>📊 Dashboard - Round <span id="dashboardRound">1</span></h2>
+            <div id="statsPanel"></div>
+        </div>
+    </div>
+
+    <!-- MESSAGES PAGE -->
+    <div id="messagesPage" class="page">
+        <div class="card"><h2>💬 Private Messages</h2>
+            <div id="messagesList" class="message-list" style="max-height: 250px; overflow-y:auto;"></div>
+            <div class="form-grid" style="margin-top: 10px;">
+                <div class="input-group"><textarea id="messageInput" rows="2" placeholder="Type your message..."></textarea></div>
+                <div class="input-group"><button id="sendMessageBtn" class="small-btn info">Send Message</button></div>
+            </div>
+            <div id="adminMessageRecipientDiv" style="display:none; margin-top: 10px;">
+                <div class="form-grid"><div class="input-group"><label>Send to Member</label><select id="adminRecipientSelect"></select></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div id="historyPage" class="page">
+        <div class="card"><h2>📜 Payment History by Round</h2>
+            <div class="round-selector" id="historyRoundSelector"></div>
+            <table id="historyTable"><thead><tr><th>Round</th><th>Member</th><th>Amount</th><th>Status</th><th>Date</th><th>Penalty</th></tr></thead><tbody id="historyTbody"></tbody></table>
+        </div>
+    </div>
+
+    <div id="aboutPage" class="page"><div class="card"><h2>📖 About</h2><p>Each round has its own segregated pot. Winner receives EXACTLY what was collected in THAT round (members' contributions + penalties for that round only).</p></div></div>
+    <div id="contactPage" class="page"><div class="card"><h2>📞 Contact</h2><p>Admin: +251911000000 | Email: admin@digitalequb.com</p></div></div>
+    <footer>© 2025 Digital Equb Pro | Round Segregation | Independent Round Pots</footer>
+</div>
+
+<script>
+    let users = [];
+    let equbState = {
+        equbName: "", initialized: false, frequency: "Weekly", amountPerRound: 500,
+        totalRounds: 24, currentRound: 1, members: [], winners: [],
+        pendingPayments: [], paymentHistory: [], messages: [], roundWinners: {}
+    };
+    let currentLoggedUser = null;
+    const ADMIN_PHONE = "+251911000000";
+
+    function generateMemberId() { let num = 1; while(equbState.members.some(m => m.memberUniqueId === `EQUB-${num}`)) num++; return `EQUB-${num}`; }
+    function saveData() { localStorage.setItem('equb_users', JSON.stringify(users)); localStorage.setItem('equb_state', JSON.stringify(equbState)); }
+    
+    function loadData() {
+        const storedUsers = localStorage.getItem('equb_users');
+        if(storedUsers) { users = JSON.parse(storedUsers); } 
+        else {
+            users = [
+                { id: "u1", username: "admin", password: "admin123", fullName: "Central Admin", role: "admin", approvedForEqub: true, equbMemberId: null, phone: ADMIN_PHONE, bankAccount: "EthioBank 100012345678" },
+                { id: "u2", username: "member1", password: "pass", fullName: "Almaz Desta", role: "member", approvedForEqub: true, equbMemberId: "EQUB-1", phone: "0912345678", bankAccount: "Telebirr 0912345678" },
+                { id: "u3", username: "member2", password: "pass", fullName: "remm", role: "member", approvedForEqub: true, equbMemberId: "EQUB-3", phone: "0922334455", bankAccount: "100045678980" },
+                { id: "u4", username: "member3", password: "pass", fullName: "Chaltu Hussein", role: "member", approvedForEqub: true, equbMemberId: "EQUB-4", phone: "0933445566", bankAccount: "Telebirr 0933445566" }
+            ];
+        }
+        const storedEqub = localStorage.getItem('equb_state');
+        if(storedEqub) { equbState = JSON.parse(storedEqub); } 
+        else { 
+            equbState = { 
+                equbName: "Family Equb", initialized: true, frequency: "Weekly", amountPerRound: 500, 
+                totalRounds: 24, currentRound: 1, members: [], winners: [], pendingPayments: [], 
+                paymentHistory: [], messages: [], roundWinners: {} 
+            }; 
+        }
+        if(!equbState.members) equbState.members = [];
+        if(!equbState.winners) equbState.winners = [];
+        if(!equbState.pendingPayments) equbState.pendingPayments = [];
+        if(!equbState.paymentHistory) equbState.paymentHistory = [];
+        if(!equbState.messages) equbState.messages = [];
+        if(!equbState.roundWinners) equbState.roundWinners = {};
+        
+        const approvedUsers = users.filter(u => u.role === 'member' && u.approvedForEqub && u.equbMemberId);
+        for(let au of approvedUsers) {
+            if(!equbState.members.find(m => m.memberUniqueId === au.equbMemberId)) {
+                equbState.members.push({
+                    memberUniqueId: au.equbMemberId, name: au.fullName, guarantorName: au.username === 'member2' ? 'remm' : "",
+                    paidRounds: 0, penalties: 0, userId: au.id,
+                    bankAccount: au.bankAccount, phone: au.phone || "", hasWon: false
+                });
+            }
+        }
+        // Sample payments for Round 1
+        if(equbState.paymentHistory.length === 0) {
+            equbState.members.forEach(m => {
+                equbState.paymentHistory.push({
+                    memberId: m.memberUniqueId, round: 1, amount: 500,
+                    reference: `SAMPLE_${m.memberUniqueId}`, date: new Date().toLocaleString(),
+                    status: 'approved', method: 'Telebirr'
+                });
+                m.paidRounds++;
+            });
+        }
+        saveData();
+    }
+
+    // Get total collected for a specific round (members' payments + penalties for that round)
+    function getRoundTotalPot(round) {
+        let totalPayments = 0;
+        let totalPenalties = 0;
+        
+        // SUM(amount) WHERE round_number = X
+        const payments = equbState.paymentHistory.filter(p => p.round === round && p.status === 'approved');
+        totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+        
+        const penalties = equbState.paymentHistory.filter(p => p.round === round && p.type === 'penalty');
+        totalPenalties = penalties.reduce((sum, p) => sum + (p.amount || 0), 0);
+        
+        return totalPayments + totalPenalties;
+    }
+
+    // Get members who paid for a specific round
+    function getPaidMembersForRound(round) {
+        const paidPayments = equbState.paymentHistory.filter(p => p.round === round && p.status === 'approved');
+        return paidPayments.map(p => p.memberId);
+    }
+
+    // Check if member already won this round
+    function hasMemberWonRound(memberId, round) {
+        return equbState.roundWinners[round] === memberId;
+    }
+
+    function sendMessage(from, to, message, fromName) {
+        const msg = { id: Date.now(), from, to, message, timestamp: new Date().toLocaleString(), fromName };
+        equbState.messages.push(msg);
+        saveData();
+        renderMessages();
+        return msg;
+    }
+
+    function renderMessages() {
+        const isAdmin = currentLoggedUser?.role === 'admin';
+        const container = document.getElementById('messagesList');
+        if(!container) return;
+        
+        let userMessages;
+        if(isAdmin) {
+            userMessages = equbState.messages;
+        } else {
+            userMessages = equbState.messages.filter(m => m.from === currentLoggedUser?.username || m.to === currentLoggedUser?.username);
+        }
+        
+        if(userMessages.length === 0) { container.innerHTML = '<div class="info-message">No messages yet</div>'; return; }
+        container.innerHTML = userMessages.slice(-30).reverse().map(m => `
+            <div class="message-item ${m.from === 'admin' ? 'message-admin' : 'message-member'}">
+                <strong>${m.from === 'admin' ? 'Admin' : (m.fromName || m.from)}</strong> 
+                <span style="font-size:0.5rem;">${m.timestamp}</span><br>
+                ${escapeHtml(m.message)}
+            </div>
+        `).join('');
+        
+        if(isAdmin) {
+            const recipientSelect = document.getElementById('adminRecipientSelect');
+            if(recipientSelect) {
+                recipientSelect.innerHTML = '<option value="">-- Select Member --</option>';
+                equbState.members.forEach(m => {
+                    recipientSelect.innerHTML += `<option value="${m.name}">${m.name} (${m.memberUniqueId})</option>`;
+                });
+            }
+        }
+    }
+
+    function sendUserMessage() {
+        if(!currentLoggedUser) { alert("Login first"); return; }
+        const msg = document.getElementById('messageInput').value.trim();
+        if(!msg) { alert("Enter message"); return; }
+        const isAdmin = currentLoggedUser.role === 'admin';
+        let recipient = 'admin';
+        if(isAdmin) {
+            recipient = document.getElementById('adminRecipientSelect').value;
+            if(!recipient) { alert("Select recipient"); return; }
+        }
+        sendMessage(currentLoggedUser.username, recipient, msg, currentLoggedUser.fullName);
+        document.getElementById('messageInput').value = '';
+        alert("Message sent");
+    }
+
+    function runPenaltyCheck() {
+        if(currentLoggedUser?.role !== 'admin') { alert("Admin only"); return; }
+        let penaltiesAdded = 0;
+        equbState.members.forEach(member => {
+            for(let round = 1; round < equbState.currentRound; round++) {
+                const paid = equbState.paymentHistory.find(p => p.memberId === member.memberUniqueId && p.round === round && p.status === 'approved');
+                if(!paid) {
+                    const existingPenalty = equbState.paymentHistory.find(p => p.memberId === member.memberUniqueId && p.round === round && p.type === 'penalty');
+                    if(!existingPenalty) {
+                        equbState.paymentHistory.push({
+                            memberId: member.memberUniqueId, round: round, amount: 50, type: 'penalty',
+                            date: new Date().toLocaleString(), status: 'penalty', description: 'Late payment penalty'
+                        });
+                        member.penalties = (member.penalties || 0) + 50;
+                        penaltiesAdded++;
+                    }
+                }
+            }
+        });
+        saveData();
+        alert(`✅ Penalty check complete! ${penaltiesAdded} penalties added.`);
+        renderAll();
+    }
+
+    function submitPaymentProof() {
+        if(!currentLoggedUser) return;
+        const userObj = users.find(u => u.username === currentLoggedUser.username);
+        if(!userObj?.approvedForEqub) { alert("Not approved yet"); return; }
+        const member = equbState.members.find(m => m.memberUniqueId === userObj.equbMemberId);
+        if(!member) return;
+        
+        const alreadyPaid = equbState.paymentHistory.find(p => p.memberId === member.memberUniqueId && p.round === equbState.currentRound && p.status === 'approved');
+        if(alreadyPaid) { alert("Already paid for this round!"); return; }
+        
+        const ref = document.getElementById('transactionRef').value.trim();
+        if(!ref) { alert("Enter reference"); return; }
+        const method = document.getElementById('paymentMethod').value;
+        
+        equbState.pendingPayments.push({
+            memberId: member.memberUniqueId, memberName: member.name, round: equbState.currentRound,
+            amount: equbState.amountPerRound, reference: ref, method: method, date: new Date().toLocaleString()
+        });
+        saveData();
+        document.getElementById('transactionRef').value = '';
+        document.getElementById('paymentStatus').innerHTML = `✅ Payment submitted for Round ${equbState.currentRound}`;
+        setTimeout(() => document.getElementById('paymentStatus').innerHTML = '', 3000);
+        alert("Payment proof submitted to Admin");
+        renderAll();
+    }
+
+    function approvePayment(idx) {
+        const payment = equbState.pendingPayments[idx];
+        const member = equbState.members.find(m => m.memberUniqueId === payment.memberId);
+        if(member) {
+            equbState.paymentHistory.push({
+                memberId: member.memberUniqueId, round: payment.round, amount: payment.amount,
+                reference: payment.reference, date: payment.date, status: 'approved', method: payment.method
+            });
+            equbState.pendingPayments.splice(idx, 1);
+            saveData();
+            renderAll();
+            alert(`Payment approved for ${member.name} Round ${payment.round}`);
+        }
+    }
+
+    function rejectPayment(idx) {
+        equbState.pendingPayments.splice(idx, 1);
+        saveData();
+        renderAll();
+        alert("Payment rejected");
+    }
+
+    function lotteryDraw() {
+        if(currentLoggedUser?.role !== 'admin') { alert("Admin only"); return; }
+        const currentRound = equbState.currentRound;
+        
+        // Get members who paid for this round and haven't won this round yet
+        const paidMembers = getPaidMembersForRound(currentRound);
+        const eligible = equbState.members.filter(m => paidMembers.includes(m.memberUniqueId) && !hasMemberWonRound(m.memberUniqueId, currentRound));
+        
+        if(eligible.length === 0) { alert("No eligible members! All paid members have already won this round or no payments."); return; }
+        
+        const winner = eligible[Math.floor(Math.random() * eligible.length)];
+        equbState.roundWinners[currentRound] = winner.memberUniqueId;
+        
+        const roundPot = getRoundTotalPot(currentRound);
+        document.getElementById('lotteryResult').innerHTML = `🎉 WINNER for Round ${currentRound}: ${winner.name} (${winner.memberUniqueId})!<br>💰 Round Pot: ${roundPot} ETB (from this round only)`;
+        alert(`Winner: ${winner.name} | Round Pot: ${roundPot} ETB`);
+        renderAll();
+    }
+
+    function showWinnerPayout() {
+        const currentRound = equbState.currentRound;
+        const winnerId = equbState.roundWinners[currentRound];
+        if(!winnerId) { alert("No winner drawn for this round yet. Run lottery first."); return; }
+        const winner = equbState.members.find(m => m.memberUniqueId === winnerId);
+        if(!winner) return;
+        const roundPot = getRoundTotalPot(currentRound);
+        
+        document.getElementById('winnerInfoDisplay').innerHTML = `
+            <p><strong>🏆 WINNER for Round ${currentRound}:</strong> ${winner.name} (${winner.memberUniqueId})</p>
+            <p><strong>🏦 Bank Account:</strong> ${winner.bankAccount}</p>
+            <p><strong>🔒 Guarantor:</strong> ${winner.guarantorName || 'Not assigned'}</p>
+            <p><strong>💰 Total Amount to Pay:</strong> ${roundPot} ETB (Round ${currentRound} pot only)</p>
+        `;
+        document.getElementById('payoutRoundNum').innerText = currentRound;
+        document.getElementById('winnerPayoutSection').style.display = 'block';
+    }
+
+    function confirmPayout() {
+        const currentRound = equbState.currentRound;
+        const winnerId = equbState.roundWinners[currentRound];
+        const winner = equbState.members.find(m => m.memberUniqueId === winnerId);
+        if(!winner) return;
+        if(!winner.guarantorName) { alert("Winner has NO GUARANTOR! Assign guarantor first."); return; }
+        const roundPot = getRoundTotalPot(currentRound);
+        sendMessage('admin', winner.name, `💰 Congratulations! You have received ${roundPot} ETB as winner of Round ${currentRound}.`, 'Admin');
+        document.getElementById('payoutStatus').innerHTML = `✅ Payout of ${roundPot} ETB confirmed to ${winner.name} for Round ${currentRound}`;
+        alert(`✅ Payout of ${roundPot} ETB confirmed to ${winner.name}`);
+        setTimeout(() => document.getElementById('payoutStatus').innerHTML = '', 3000);
+    }
+
+    function nextRound() {
+        if(currentLoggedUser?.role !== 'admin') { alert("Admin only"); return; }
+        if(equbState.currentRound >= equbState.totalRounds) { alert("Equb completed! Create new Equb."); return; }
+        equbState.currentRound++;
+        saveData();
+        renderAll();
+        alert(`Round ${equbState.currentRound} started! This round's pot is separate from previous rounds.`);
+        hideAllSections(); showDashboard();
+    }
+
+    function clearAllData() {
+        if(currentLoggedUser?.role !== 'admin') { alert("Admin only"); return; }
+        if(confirm("⚠️ DELETE ALL DATA? This will reset everything. Cannot be undone!")) {
+            localStorage.clear();
+            alert("All data cleared! Page will reload.");
+            location.reload();
+        }
+    }
+
+    function renderRoundSelector() {
+        const container = document.getElementById('roundSelector');
+        if(!container) return;
+        let html = '';
+        for(let r = 1; r <= equbState.totalRounds; r++) {
+            const isActive = r === equbState.currentRound;
+            html += `<span class="round-tab" onclick="viewRoundPot(${r})" style="background:${r === equbState.currentRound ? '#2b7a4b' : '#e2e8f0'}; color:${r === equbState.currentRound ? 'white' : 'black'}">Round ${r}</span>`;
+        }
+        container.innerHTML = html;
+        viewRoundPot(equbState.currentRound);
+    }
+
+    function viewRoundPot(round) {
+        const roundPot = getRoundTotalPot(round);
+        const paidMembers = getPaidMembersForRound(round);
+        const winnerId = equbState.roundWinners[round];
+        const winner = winnerId ? equbState.members.find(m => m.memberUniqueId === winnerId) : null;
+        document.getElementById('roundPotInfo').innerHTML = `
+            <p><strong>Round ${round} Summary:</strong></p>
+            <p>💰 Total Collected: ${roundPot} ETB</p>
+            <p>👥 Paid Members: ${paidMembers.length} / ${equbState.members.length}</p>
+            <p>🏆 Winner: ${winner ? winner.name : 'Not drawn yet'}</p>
+        `;
+    }
+
+    function renderPaymentHistory() {
+        if(!currentLoggedUser) return;
+        const isAdmin = currentLoggedUser.role === 'admin';
+        let history;
+        if(isAdmin) {
+            history = equbState.paymentHistory;
+        } else {
+            const userObj = users.find(u => u.username === currentLoggedUser.username);
+            const member = equbState.members.find(m => m.memberUniqueId === userObj?.equbMemberId);
+            history = equbState.paymentHistory.filter(p => p.memberId === member?.memberUniqueId);
+        }
+        
+        const tbody = document.getElementById('historyTbody');
+        if(tbody) {
+            tbody.innerHTML = '';
+            const sortedHistory = [...history].sort((a,b) => a.round - b.round);
+            sortedHistory.forEach(p => {
+                const status = p.status === 'approved' ? '<span class="paid">✅ Paid</span>' : (p.type === 'penalty' ? '<span class="penalty">⚠️ Penalty</span>' : '❌ Rejected');
+                const member = equbState.members.find(m => m.memberUniqueId === p.memberId);
+                tbody.innerHTML += `<tr>
+                    <td>${p.round}</td><td>${member?.name || p.memberId}</td>
+                    <td>${p.amount} ETB</td><td>${status}</td>
+                    <td>${p.date || '-'}</td><td>${p.type === 'penalty' ? p.amount + ' ETB' : '-'}</td>
+                </tr>`;
+            });
+        }
+        
+        // History round selector
+        const histSelector = document.getElementById('historyRoundSelector');
+        if(histSelector) {
+            let html = '';
+            for(let r = 1; r <= equbState.totalRounds; r++) {
+                html += `<span class="round-tab" onclick="filterHistoryByRound(${r})">Round ${r}</span>`;
+            }
+            histSelector.innerHTML = html;
+        }
+    }
+
+    function filterHistoryByRound(round) {
+        const isAdmin = currentLoggedUser?.role === 'admin';
+        let history;
+        if(isAdmin) {
+            history = equbState.paymentHistory.filter(p => p.round === round);
+        } else {
+            const userObj = users.find(u => u.username === currentLoggedUser?.username);
+            const member = equbState.members.find(m => m.memberUniqueId === userObj?.equbMemberId);
+            history = equbState.paymentHistory.filter(p => p.memberId === member?.memberUniqueId && p.round === round);
+        }
+        const tbody = document.getElementById('historyTbody');
+        if(tbody) {
+            tbody.innerHTML = '';
+            history.forEach(p => {
+                const status = p.status === 'approved' ? '<span class="paid">✅ Paid</span>' : (p.type === 'penalty' ? '<span class="penalty">⚠️ Penalty</span>' : '❌ Rejected');
+                const member = equbState.members.find(m => m.memberUniqueId === p.memberId);
+                tbody.innerHTML += `<tr>
+                    <td>${p.round}</td><td>${member?.name || p.memberId}</td>
+                    <td>${p.amount} ETB</td><td>${status}</td>
+                    <td>${p.date || '-'}</td><td>${p.type === 'penalty' ? p.amount + ' ETB' : '-'}</td>
+                </tr>`;
+            });
+        }
+    }
+
+    function hideAllSections() {
+        const sections = ['createEqubSection', 'approveMemberSection', 'membersTableSection', 'pendingPaymentsSection', 'assignGuarantorSection', 'lotterySection', 'winnerPayoutSection', 'dashboardSection'];
+        sections.forEach(s => { const el = document.getElementById(s); if(el) el.style.display = 'none'; });
+    }
+    function showCreateEqub() { hideAllSections(); document.getElementById('createEqubSection').style.display = 'block'; }
+    function showApproveMember() { hideAllSections(); renderPendingDropdown(); document.getElementById('approveMemberSection').style.display = 'block'; }
+    function showMembersTable() { hideAllSections(); renderMembersTableFull(); document.getElementById('membersTableSection').style.display = 'block'; }
+    function showPendingPayments() { hideAllSections(); renderPendingPaymentsList(); document.getElementById('pendingPaymentsSection').style.display = 'block'; }
+    function showAssignGuarantor() { hideAllSections(); renderGuarantorDropdowns(); document.getElementById('assignGuarantorSection').style.display = 'block'; }
+    function showLottery() { hideAllSections(); document.getElementById('lotteryRoundNum').innerText = equbState.currentRound; document.getElementById('lotterySection').style.display = 'block'; }
+    function showWinnerPayoutSection() { hideAllSections(); showWinnerPayout(); }
+    function showDashboard() { 
+        hideAllSections(); 
+        document.getElementById('dashboardRound').innerText = equbState.currentRound;
+        renderStatsFull(); 
+        document.getElementById('dashboardSection').style.display = 'block'; 
+    }
+
+    function renderStatsFull() {
+        const currentRoundPot = getRoundTotalPot(equbState.currentRound);
+        const winnerId = equbState.roundWinners[equbState.currentRound];
+        const winner = winnerId ? equbState.members.find(m => m.memberUniqueId === winnerId) : null;
+        document.getElementById('statsPanel').innerHTML = `<div class="dashboard-card">
+            <p>💰 Round ${equbState.currentRound} Pot: <strong>${currentRoundPot} ETB</strong> (FROM THIS ROUND ONLY)</p>
+            <p>📊 Round: ${equbState.currentRound}/${equbState.totalRounds}</p>
+            <p>👥 Members: ${equbState.members.length}</p>
+            <p>🏆 Winner: ${winner ? winner.name : 'Not drawn yet'}</p>
+            <p>💸 Winner receives: <strong>${currentRoundPot} ETB</strong> (Round ${equbState.currentRound} collected amount)</p>
+            <p style="font-size:0.55rem; color:#666;">✅ Previous rounds' pots are separate and already paid to their winners</p>
+        </div>`;
+    }
+
+    function renderMembersTableFull() {
+        let tbody = document.getElementById('membersTbody');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        equbState.members.forEach(m => {
+            const paidCount = equbState.paymentHistory.filter(p => p.memberId === m.memberUniqueId && p.status === 'approved').length;
+            tbody.innerHTML += `<tr>
+                <td>${m.memberUniqueId}</td><td>${escapeHtml(m.name)}</td>
+                <td>${m.phone || '—'}</td><td>${m.guarantorName || '—'}</td>
+                <td>${Object.values(equbState.roundWinners).includes(m.memberUniqueId) ? '🏆 Yes' : 'No'}</td>
+                <td>${paidCount}/${equbState.totalRounds}</td><td class="penalty">${m.penalties || 0}</td>
+            </tr>`;
+        });
+    }
+
+    function renderPendingPaymentsList() {
+        const container = document.getElementById('pendingPaymentsList');
+        if(equbState.pendingPayments.length === 0) { container.innerHTML = '<div class="info-message">No pending payments</div>'; return; }
+        container.innerHTML = equbState.pendingPayments.map((p, idx) => `
+            <div class="payment-details"><p><strong>${p.memberName}</strong> | Round ${p.round} | ${p.amount} ETB | ${p.method}</p>
+            <p>Ref: ${p.reference} | Date: ${p.date}</p>
+            <button class="small-btn success" onclick="approvePayment(${idx})">✅ Approve</button>
+            <button class="small-btn danger" onclick="rejectPayment(${idx})">❌ Reject</button></div>
+        `).join('');
+    }
+
+    function renderGuarantorDropdowns() {
+        let memberSelect = document.getElementById('guarantorMemberSelect');
+        let guarantorSelect = document.getElementById('guarantorAssignSelect');
+        memberSelect.innerHTML = '<option value="">-- Member --</option>';
+        guarantorSelect.innerHTML = '<option value="">-- Guarantor --</option>';
+        equbState.members.forEach(m => { memberSelect.innerHTML += `<option value="${m.memberUniqueId}">${m.name}</option>`; });
+        equbState.members.forEach(m => { guarantorSelect.innerHTML += `<option value="${m.memberUniqueId}|${m.name}">${m.name}</option>`; });
+    }
+
+    function renderPendingDropdown() {
+        let select = document.getElementById('selectPendingUser');
+        let pending = users.filter(u => u.role === 'member' && !u.approvedForEqub);
+        select.innerHTML = '<option value="">-- Select --</option>';
+        pending.forEach(u => { select.innerHTML += `<option value="${u.username}">${u.fullName}</option>`; });
+        document.getElementById('pendingMembersList').innerHTML = pending.length ? `⏳ Pending: ${pending.map(u=>u.fullName).join(', ')}` : '✅ None';
+    }
+
+    function renderMemberStatus() {
+        let container = document.getElementById('myStatusContent');
+        if(!currentLoggedUser) return;
+        if(currentLoggedUser.role === 'admin') {
+            container.innerHTML = `<div class="dashboard-card">👑 Admin: Each round has its own pot. Winner gets only current round's collected amount.</div>`;
+            return;
+        }
+        let userObj = users.find(u => u.username === currentLoggedUser.username);
+        if(!userObj || !userObj.approvedForEqub) { container.innerHTML = `<div class="dashboard-card">⏳ Pending Approval</div>`; return; }
+        let member = equbState.members.find(m => m.memberUniqueId === userObj.equbMemberId);
+        if(!member) return;
+        
+        const paidThisRound = equbState.paymentHistory.some(p => p.memberId === member.memberUniqueId && p.round === equbState.currentRound && p.status === 'approved');
+        const statusText = paidThisRound ? '✅ Paid for current round' : '⏳ Payment pending for current round';
+        container.innerHTML = `<div class="dashboard-card"><strong>${member.memberUniqueId}</strong> | ${member.name}<br>💰 ${statusText}<br>📊 Total Paid: ${equbState.paymentHistory.filter(p => p.memberId === member.memberUniqueId && p.status === 'approved').length}/${equbState.totalRounds}<br>⚠️ Penalties: ${member.penalties || 0} ETB</div>`;
+        document.getElementById('paymentAmount').value = equbState.amountPerRound;
+        document.getElementById('currentRoundForPayment').innerText = equbState.currentRound;
+    }
+
+    function initCycle() {
+        if(currentLoggedUser?.role !== 'admin') { alert("Admin only"); return; }
+        let name = document.getElementById('equbNameInput').value.trim();
+        if(!name) { alert("Enter Equb name"); return; }
+        equbState = {
+            equbName: name, initialized: true, frequency: document.getElementById('frequencySelect').value,
+            amountPerRound: parseFloat(document.getElementById('contributionAmount').value),
+            totalRounds: parseInt(document.getElementById('totalRounds').value), currentRound: 1,
+            members: equbState.members || [], winners: [], pendingPayments: [], paymentHistory: [], 
+            messages: equbState.messages || [], roundWinners: {}
+        };
+        saveData(); renderAll();
+        document.getElementById('cycleInfo').innerHTML = `✅ Equb "${name}" created with ${equbState.totalRounds} rounds!`;
+        hideAllSections(); showDashboard();
+    }
+
+    function addToEqubGroup() {
+        if(currentLoggedUser?.role !== 'admin') return;
+        let username = document.getElementById('selectPendingUser').value;
+        if(!username) return;
+        let user = users.find(u => u.username === username);
+        if(!user || user.approvedForEqub) return;
+        user.approvedForEqub = true;
+        let newId = generateMemberId();
+        user.equbMemberId = newId;
+        equbState.members.push({ memberUniqueId: newId, name: user.fullName, guarantorName: "", paidRounds: 0, penalties: 0, userId: user.id, bankAccount: user.bankAccount, phone: user.phone, hasWon: false });
+        saveData(); renderAll();
+        alert(`✅ ${user.fullName} approved! ID: ${newId}`);
+        hideAllSections(); showDashboard();
+    }
+
+    function assignGuarantor() {
+        const memberId = document.getElementById('guarantorMemberSelect').value;
+        const guarantorValue = document.getElementById('guarantorAssignSelect').value;
+        if(!memberId || !guarantorValue) { alert("Select both"); return; }
+        const member = equbState.members.find(m => m.memberUniqueId === memberId);
+        member.guarantorName = guarantorValue.split('|')[1];
+        saveData();
+        document.getElementById('guarantorStatus').innerHTML = `✅ Guarantor assigned to ${member.name}`;
+        setTimeout(() => document.getElementById('guarantorStatus').innerHTML = '', 2000);
+        renderAll();
+    }
+
+    function renderAll() {
+        renderAuthUI();
+        if(currentLoggedUser) {
+            let isAdmin = currentLoggedUser.role === 'admin';
+            document.getElementById('adminButtonsCard').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('memberPaymentCard').style.display = !isAdmin ? 'block' : 'none';
+            document.getElementById('adminMessageRecipientDiv').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('roundNumber').innerText = equbState.currentRound;
+            document.getElementById('totalRoundsSpan').innerText = equbState.totalRounds;
+            document.getElementById('currentRoundDisplay').innerText = equbState.currentRound;
+            renderMemberStatus();
+            renderPaymentHistory();
+            renderMessages();
+            renderRoundSelector();
+            if(isAdmin) showDashboard();
+        }
+    }
+
+    function renderAuthUI() {
+        let authPage = document.getElementById('authPage');
+        let homePage = document.getElementById('homePage');
+        let userBar = document.getElementById('userInfoBar');
+        if(currentLoggedUser) {
+            authPage.classList.remove('active-page');
+            homePage.classList.add('active-page');
+            userBar.style.display = 'flex';
+            document.getElementById('currentUserSpan').innerHTML = `👤 ${currentLoggedUser.fullName} (${currentLoggedUser.role === 'admin' ? 'Admin' : 'Member'})`;
+        } else {
+            authPage.classList.add('active-page');
+            homePage.classList.remove('active-page');
+            userBar.style.display = 'none';
+        }
+    }
+
+    function signup() {
+        let name = document.getElementById('signupName').value.trim();
+        let username = document.getElementById('signupUsername').value.trim();
+        let password = document.getElementById('signupPassword').value.trim();
+        let phone = document.getElementById('signupPhone').value.trim();
+        let bank = document.getElementById('signupBankAccount').value.trim();
+        if(!name || !username || !password) { alert("All fields required"); return; }
+        if(users.find(u => u.username === username)) { alert("Username exists"); return; }
+        users.push({ id: "u"+Date.now(), username, password, fullName: name, role: "member", approvedForEqub: false, equbMemberId: null, phone: phone || "", bankAccount: bank || "Not provided" });
+        saveData();
+        alert("Signup successful! Wait for admin approval.");
+        document.getElementById('showLoginBtn').click();
+    }
+
+    function login() {
+        let username = document.getElementById('loginUsername').value;
+        let password = document.getElementById('loginPassword').value;
+        let user = users.find(u => u.username === username && u.password === password);
+        if(!user) { alert("Invalid"); return; }
+        currentLoggedUser = { username: user.username, role: user.role, fullName: user.fullName, id: user.id };
+        renderAll();
+    }
+
+    function logout() { currentLoggedUser = null; renderAll(); }
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+
+    // Event Listeners
+    document.getElementById('btnCreateEqub')?.addEventListener('click', showCreateEqub);
+    document.getElementById('btnApproveMember')?.addEventListener('click', showApproveMember);
+    document.getElementById('btnViewMembers')?.addEventListener('click', showMembersTable);
+    document.getElementById('btnPendingPayments')?.addEventListener('click', showPendingPayments);
+    document.getElementById('btnAssignGuarantor')?.addEventListener('click', showAssignGuarantor);
+    document.getElementById('btnRunPenalty')?.addEventListener('click', runPenaltyCheck);
+    document.getElementById('btnLottery')?.addEventListener('click', showLottery);
+    document.getElementById('btnWinnerPayout')?.addEventListener('click', showWinnerPayoutSection);
+    document.getElementById('btnNextRound')?.addEventListener('click', nextRound);
+    document.getElementById('btnClearData')?.addEventListener('click', clearAllData);
+    document.getElementById('btnDashboard')?.addEventListener('click', showDashboard);
+    
+    document.getElementById('initCycleBtn')?.addEventListener('click', initCycle);
+    document.getElementById('addToEqubBtn')?.addEventListener('click', addToEqubGroup);
+    document.getElementById('assignGuarantorBtn')?.addEventListener('click', assignGuarantor);
+    document.getElementById('lotteryDrawBtn')?.addEventListener('click', lotteryDraw);
+    document.getElementById('confirmPayoutBtn')?.addEventListener('click', confirmPayout);
+    document.getElementById('submitPaymentBtn')?.addEventListener('click', submitPaymentProof);
+    document.getElementById('sendMessageBtn')?.addEventListener('click', sendUserMessage);
+    
+    document.getElementById('showLoginBtn')?.addEventListener('click', () => { document.getElementById('loginFormDiv').style.display='block'; document.getElementById('signupFormDiv').style.display='none'; });
+    document.getElementById('showSignupBtn')?.addEventListener('click', () => { document.getElementById('loginFormDiv').style.display='none'; document.getElementById('signupFormDiv').style.display='block'; });
+    document.getElementById('doLoginBtn')?.addEventListener('click', login);
+    document.getElementById('doSignupBtn')?.addEventListener('click', signup);
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            let page = btn.getAttribute('data-page');
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            document.getElementById(`${page}Page`).classList.add('active-page');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if(page === 'history' && currentLoggedUser) renderPaymentHistory();
+            if(page === 'messages' && currentLoggedUser) renderMessages();
+        });
+    });
+
+    window.approvePayment = approvePayment;
+    window.rejectPayment = rejectPayment;
+    window.viewRoundPot = viewRoundPot;
+    window.filterHistoryByRound = filterHistoryByRound;
+    loadData();
+    renderAll();
+</script>
+</body>
+</html>
