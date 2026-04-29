@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            padding-top: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1300px;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .wide-input {
+            width: 100%;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+        .badge-status {
+            font-size: 0.9rem;
+        }
+        .nav-tabs .nav-link {
+            font-weight: 500;
+        }
+        .export-import {
+            margin-bottom: 20px;
+        }
+        .btn-sm {
+            margin-right: 5px;
+        }
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #6c757d;
+        }
+        .login-area {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        .user-info {
+            background-color: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .message-item {
+            background: #f1f1f1;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #loginContainer {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+    </style>
+</head>
+<body>
+    <h1> there is the change in the  code </h1>
+    <!-- Login Container (visible initially) -->
+    <div id="loginContainer" class="container">
+        <div class="card">
+            <div class="card-header text-center">Academic System Login</div>
+            <div class="card-body">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>Role</label>
+                        <select id="loginRole" class="form-control" required>
+                            <option value="admin">Admin</option>
+                            <option value="instructor">Instructor</option>
+                            <option value="student">Student</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Username / Student ID</label>
+                        <input type="text" id="loginUsername" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+                <hr>
+                <p class="small text-muted">Demo credentials:<br>
+                Admin: <code>admin / admin123</code><br>
+                Instructor: <code>instructor / inst123</code><br>
+                Student: <code>student_id (e.g., S001) / student123</code></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container (hidden until login) -->
+    <div id="appContainer" class="container" style="display: none;">
+        <h1 class="text-center mb-4">📚 Academic Management System</h1>
+        <p class="text-center text-muted">All data saved automatically in your browser.</p>
+
+        <!-- User info and global actions -->
+        <div class="login-area">
+            <div class="user-info">
+                Logged in as: <span id="userRole"></span> |
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="export-import text-end" id="adminActions">
+            <!-- Admin-only buttons will be shown/hidden by JS -->
+        </div>
+
+        <!-- Dynamic tabs -->
+        <ul class="nav nav-tabs" id="stepTabs" role="tablist"></ul>
+        <div class="tab-content mt-4" id="tabContent"></div>
+        <footer>Data is stored in your browser's local storage. Use Export/Import to backup/restore.</footer>
+    </div>
+
+    <!-- Modals (initially empty, will be populated after login) -->
+    <div id="modalsContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ------------------ Data Models ------------------
+        let students = [];
+        let courses = [];
+        let instructors = [];
+        let enrollments = [];
+        let assessments = [];
+        let marks = [];
+        let grades = [];
+        let messages = [];
+        let departments = [];
+
+        // ------------------ Storage Keys ------------------
+        const STORAGE_KEYS = {
+            students: 'academic_students',
+            courses: 'academic_courses',
+            instructors: 'academic_instructors',
+            enrollments: 'academic_enrollments',
+            assessments: 'academic_assessments',
+            marks: 'academic_marks',
+            grades: 'academic_grades',
+            messages: 'academic_messages',
+            departments: 'academic_departments'
+        };
+
+        // ------------------ Helper Functions ------------------
+        function loadData() {
+            students = JSON.parse(localStorage.getItem(STORAGE_KEYS.students) || '[]');
+            courses = JSON.parse(localStorage.getItem(STORAGE_KEYS.courses) || '[]');
+            instructors = JSON.parse(localStorage.getItem(STORAGE_KEYS.instructors) || '[]');
+            enrollments = JSON.parse(localStorage.getItem(STORAGE_KEYS.enrollments) || '[]');
+            assessments = JSON.parse(localStorage.getItem(STORAGE_KEYS.assessments) || '[]');
+            marks = JSON.parse(localStorage.getItem(STORAGE_KEYS.marks) || '[]');
+            grades = JSON.parse(localStorage.getItem(STORAGE_KEYS.grades) || '[]');
+            messages = JSON.parse(localStorage.getItem(STORAGE_KEYS.messages) || '[]');
+            departments = JSON.parse(localStorage.getItem(STORAGE_KEYS.departments) || '[]');
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEYS.students, JSON.stringify(students));
+            localStorage.setItem(STORAGE_KEYS.courses, JSON.stringify(courses));
+            localStorage.setItem(STORAGE_KEYS.instructors, JSON.stringify(instructors));
+            localStorage.setItem(STORAGE_KEYS.enrollments, JSON.stringify(enrollments));
+            localStorage.setItem(STORAGE_KEYS.assessments, JSON.stringify(assessments));
+            localStorage.setItem(STORAGE_KEYS.marks, JSON.stringify(marks));
+            localStorage.setItem(STORAGE_KEYS.grades, JSON.stringify(grades));
+            localStorage.setItem(STORAGE_KEYS.messages, JSON.stringify(messages));
+            localStorage.setItem(STORAGE_KEYS.departments, JSON.stringify(departments));
+        }
+
+        function getCourseById(id) { return courses.find(c => c.id === id); }
+        function getStudentById(id) { return students.find(s => s.id === id); }
+        function getInstructorById(id) { return instructors.find(i => i.id === id); }
+        function getEnrolledStudents(courseId) {
+            const studentIds = enrollments.filter(e => e.courseId === courseId).map(e => e.studentId);
+            return students.filter(s => studentIds.includes(s.id));
+        }
+        function getCourseAssessments(courseId) { return assessments.filter(a => a.courseId === courseId); }
+
+        // ------------------ Initial Sample Data ------------------
+        function initSampleData() {
+            if (courses.length === 0) {
+                courses = [
+                    { id: "CS101", name: "Intro to Programming" },
+                    { id: "MATH101", name: "Calculus I" }
+                ];
+            }
+            if (instructors.length === 0) {
+                instructors = [
+                    { id: "I001", name: "Dr. Smith" },
+                    { id: "I002", name: "Prof. Johnson" }
+                ];
+            }
+            if (departments.length === 0) {
+                departments = [
+                    "Computer Science",
+                    "Mathematics",
+                    "Physics",
+                    "Engineering"
+                ];
+            }
+            saveData();
+        }
+
+        // ------------------ User Management ------------------
+        let currentUser = null;
+
+        function login(role, username, password) {
+            if (role === 'admin' && username === 'admin' && password === 'admin123') {
+                currentUser = { username: 'admin', role: 'admin' };
+            } else if (role === 'instructor' && username === 'instructor' && password === 'inst123') {
+                currentUser = { username: 'instructor', role: 'instructor' };
+            } else if (role === 'student' && password === 'student123') {
+                // For student, the username should be a valid student ID
+                const student = getStudentById(username);
+                if (student) {
+                    currentUser = { username: student.id, role: 'student', name: student.name, department: student.department };
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            return true;
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            // Hide app, show login
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginContainer').style.display = 'block';
+        }
+
+        // ------------------ Role‑Specific UI Building ------------------
+        function buildUI() {
+            if (!currentUser) return;
+
+            // Show app container
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+
+            // Set user role display
+            document.getElementById('userRole').innerText = currentUser.role.toUpperCase();
+
+            // Admin-only buttons
+            const adminActionsDiv = document.getElementById('adminActions');
+            if (currentUser.role === 'admin') {
+                adminActionsDiv.innerHTML = `
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCourseModal"><i class="fas fa-plus"></i> Add Course</button>
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addInstructorModal"><i class="fas fa-plus"></i> Add Instructor</button>
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDepartmentModal"><i class="fas fa-building"></i> Add Department</button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="exportData()"><i class="fas fa-download"></i> Export Backup</button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="importData()"><i class="fas fa-upload"></i> Import Backup</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="clearAllData()"><i class="fas fa-trash"></i> Clear All Data</button>
+                `;
+            } else {
+                adminActionsDiv.innerHTML = `
+                    <button class="btn btn-outline-secondary btn-sm" onclick="exportData()"><i class="fas fa-download"></i> Export Backup</button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="importData()"><i class="fas fa-upload"></i> Import Backup</button>
+                `;
+            }
+
+            // Build modals (only once)
+            if (!document.getElementById('addCourseModal')) {
+                const modalsContainer = document.getElementById('modalsContainer');
+                modalsContainer.innerHTML = `
+                    <div class="modal fade" id="addCourseModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Add New Course</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="addCourseForm">
+                                        <div class="mb-3">
+                                            <label for="courseId" class="form-label">Course ID</label>
+                                            <input type="text" class="form-control" id="courseId" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="courseName" class="form-label">Course Name</label>
+                                            <input type="text" class="form-control" id="courseName" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Add Course</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal fade" id="addInstructorModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Add New Instructor</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="addInstructorForm">
+                                        <div class="mb-3">
+                                            <label for="instructorId" class="form-label">Instructor ID</label>
+                                            <input type="text" class="form-control" id="instructorId" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="instructorName" class="form-label">Instructor Name</label>
+                                            <input type="text" class="form-control" id="instructorName" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Add Instructor</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal fade" id="addDepartmentModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Add New Department</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="addDepartmentForm">
+                                        <div class="mb-3">
+                                            <label for="departmentName" class="form-label">Department Name</label>
+                                            <input type="text" class="form-control" id="departmentName" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Add Department</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                // Attach event listeners for modals
+                document.getElementById('addCourseForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('courseId').value.trim();
+                    const name = document.getElementById('courseName').value.trim();
+                    if (!id || !name) { alert('Enter both ID and name.'); return; }
+                    if (courses.some(c => c.id === id)) { alert('Course ID already exists.'); return; }
+                    courses.push({ id, name });
+                    saveData();
+                    refreshAll();
+                    bootstrap.Modal.getInstance(document.getElementById('addCourseModal')).hide();
+                    document.getElementById('addCourseForm').reset();
+                    alert('Course added.');
+                });
+                document.getElementById('addInstructorForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const id = document.getElementById('instructorId').value.trim();
+                    const name = document.getElementById('instructorName').value.trim();
+                    if (!id || !name) { alert('Enter both ID and name.'); return; }
+                    if (instructors.some(i => i.id === id)) { alert('Instructor ID already exists.'); return; }
+                    instructors.push({ id, name });
+                    saveData();
+                    refreshAll();
+                    bootstrap.Modal.getInstance(document.getElementById('addInstructorModal')).hide();
+                    document.getElementById('addInstructorForm').reset();
+                    alert('Instructor added.');
+                });
+                document.getElementById('addDepartmentForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const name = document.getElementById('departmentName').value.trim();
+                    if (!name) { alert('Enter department name.'); return; }
+                    if (departments.includes(name)) { alert('Department already exists.'); return; }
+                    departments.push(name);
+                    saveData();
+                    refreshAll();
+                    bootstrap.Modal.getInstance(document.getElementById('addDepartmentModal')).hide();
+                    document.getElementById('addDepartmentForm').reset();
+                    alert('Department added.');
+                });
+            }
+
+            // Build tabs based on role
+            let tabs = [];
+            if (currentUser.role === 'admin') {
+                tabs = [
+                    { id: 'step1', label: '1. Student Registration', component: 'step1' },
+                    { id: 'step2', label: '2. Course & Instructor Assignment', component: 'step2' },
+                    { id: 'step3', label: '3. Teaching & Assessment Activities', component: 'step3' },
+                    { id: 'step4', label: '4. Marks Entry', component: 'step4' },
+                    { id: 'step5', label: '5. Grade Calculation', component: 'step5' },
+                    { id: 'step6', label: '6. Verification / Approval', component: 'step6' },
+                    { id: 'step7', label: '7. Grade Submission', component: 'step7' },
+                    { id: 'step8', label: '8. Result Publication', component: 'step8' },
+                    { id: 'step9', label: '9. Report Generation', component: 'step9' }
+                ];
+            } else if (currentUser.role === 'instructor') {
+                tabs = [
+                    { id: 'step1', label: '1. Student Registration', component: 'step1' },
+                    { id: 'step2', label: '2. Course & Instructor Assignment', component: 'step2' },
+                    { id: 'step3', label: '3. Teaching & Assessment Activities', component: 'step3' },
+                    { id: 'step4', label: '4. Marks Entry', component: 'step4' },
+                    { id: 'step5', label: '5. Grade Calculation', component: 'step5' },
+                    { id: 'step7', label: '7. Grade Submission', component: 'step7' },
+                    { id: 'messages', label: '📩 Messages', component: 'messages' }
+                ];
+            } else if (currentUser.role === 'student') {
+                tabs = [
+                    { id: 'step8', label: '8. My Results', component: 'step8' },
+                    { id: 'reportIssue', label: '📝 Report Grade Issue', component: 'reportIssue' }
+                ];
+            }
+
+            // Render tabs and panes
+            const tabsContainer = document.getElementById('stepTabs');
+            const contentContainer = document.getElementById('tabContent');
+            tabsContainer.innerHTML = '';
+            contentContainer.innerHTML = '';
+
+            tabs.forEach((tab, idx) => {
+                const li = document.createElement('li');
+                li.className = 'nav-item';
+                li.role = 'presentation';
+                const btn = document.createElement('button');
+                btn.className = `nav-link ${idx === 0 ? 'active' : ''}`;
+                btn.id = `${tab.id}-tab`;
+                btn.setAttribute('data-bs-toggle', 'tab');
+                btn.setAttribute('data-bs-target', `#${tab.id}`);
+                btn.type = 'button';
+                btn.role = 'tab';
+                btn.textContent = tab.label;
+                li.appendChild(btn);
+                tabsContainer.appendChild(li);
+
+                const pane = document.createElement('div');
+                pane.className = `tab-pane fade ${idx === 0 ? 'show active' : ''}`;
+                pane.id = tab.id;
+                pane.role = 'tabpanel';
+                pane.setAttribute('aria-labelledby', `${tab.id}-tab`);
+                contentContainer.appendChild(pane);
+            });
+
+            // Call refresh functions for each component
+            if (currentUser.role === 'admin') {
+                refreshStep1(); refreshStep2(); refreshStep3(); refreshStep4(); refreshStep5();
+                refreshStep6(); refreshStep7(); refreshStep8(); refreshStep9();
+            } else if (currentUser.role === 'instructor') {
+                refreshStep1(); refreshStep2(); refreshStep3(); refreshStep4(); refreshStep5(); refreshStep7();
+                refreshMessages();
+            } else if (currentUser.role === 'student') {
+                refreshStep8(); refreshReportIssue();
+            }
+        }
+
+        // ------------------ All component functions (with department support) ------------------
+
+        // --- Step1 ---
+        function refreshStep1() {
+            const pane = document.getElementById('step1');
+            if (!pane) return;
+            // Build HTML (same as before)
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">Register New Student</div>
+                    <div class="card-body">
+                        <form id="studentForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Student Name</label>
+                                        <input type="text" class="form-control" id="studentName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Student ID</label>
+                                        <input type="text" class="form-control" id="studentId" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Department</label>
+                                        <select id="studentDepartment" class="form-control" required>
+                                            <option value="">Select Department</option>
+                                            ${departments.map(dept => `<option value="${dept}">${dept}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Enroll in Courses</label><br>
+                                        <div id="courseCheckboxes"></div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Register Student</button>
+                                </div>
+                            </div>
+                        </form>
+                        <hr>
+                        <h5>Registered Students</h5>
+                        <div id="studentList" class="table-responsive"></div>
+                    </div>
+                </div>
+            `;
+            // Populate checkboxes
+            const container = document.getElementById('courseCheckboxes');
+            if (container) {
+                container.innerHTML = '';
+                courses.forEach(course => {
+                    const div = document.createElement('div');
+                    div.className = 'form-check';
+                    div.innerHTML = `
+                        <input class="form-check-input" type="checkbox" value="${course.id}" id="course_${course.id}">
+                        <label class="form-check-label" for="course_${course.id}">${course.name} (${course.id})</label>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            // Show student list
+            const studentListDiv = document.getElementById('studentList');
+            if (studentListDiv) {
+                if (students.length === 0) studentListDiv.innerHTML = '<p>No students registered yet.</p>';
+                else {
+                    let html = '<table class="table table-striped"><thead> <tr><th>ID</th><th>Name</th><th>Department</th><th>Enrolled Courses</th> </tr> </thead><tbody>';
+                    students.forEach(s => {
+                        const enrolled = enrollments.filter(e => e.studentId === s.id).map(e => getCourseById(e.courseId)?.name || e.courseId);
+                        html += `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.department || 'N/A'}</td><td>${enrolled.join(', ') || 'None'}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    studentListDiv.innerHTML = html;
+                }
+            }
+            // Attach event
+            const form = document.getElementById('studentForm');
+            if (form) {
+                form.onsubmit = function(e) {
+                    e.preventDefault();
+                    const name = document.getElementById('studentName').value.trim();
+                    const id = document.getElementById('studentId').value.trim();
+                    const department = document.getElementById('studentDepartment').value;
+                    if (!name || !id || !department) { alert('Please fill all fields.'); return; }
+                    if (students.some(s => s.id === id)) { alert('Student ID already exists.'); return; }
+                    students.push({ id, name, department });
+                    const selectedCourses = Array.from(document.querySelectorAll('#courseCheckboxes input:checked')).map(cb => cb.value);
+                    selectedCourses.forEach(courseId => enrollments.push({ studentId: id, courseId }));
+                    saveData();
+                    refreshStep1();
+                    document.getElementById('studentName').value = '';
+                    document.getElementById('studentId').value = '';
+                    document.getElementById('studentDepartment').value = '';
+                    document.querySelectorAll('#courseCheckboxes input:checked').forEach(cb => cb.checked = false);
+                    alert('Student registered.');
+                };
+            }
+        }
+
+        // --- Step2 (no department changes) ---
+        function refreshStep2() {
+            const pane = document.getElementById('step2');
+            if (!pane) return;
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">Assign Instructor to Course</div>
+                    <div class="card-body">
+                        <form id="assignForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Course</label>
+                                        <select id="assignCourse" class="form-control" required></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Instructor</label>
+                                        <select id="assignInstructor" class="form-control" required></select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Assign</button>
+                                </div>
+                            </div>
+                        </form>
+                        <hr>
+                        <h5>Current Assignments</h5>
+                        <div id="assignmentList" class="table-responsive"></div>
+                    </div>
+                </div>
+            `;
+            const courseSelect = document.getElementById('assignCourse');
+            const instructorSelect = document.getElementById('assignInstructor');
+            if (courseSelect) courseSelect.innerHTML = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+            if (instructorSelect) instructorSelect.innerHTML = '<option value="">Select Instructor</option>' + instructors.map(i => `<option value="${i.id}">${i.name} (${i.id})</option>`).join('');
+            const assignDiv = document.getElementById('assignmentList');
+            if (assignDiv) {
+                if (courses.length === 0) assignDiv.innerHTML = '<p>No courses defined.</p>';
+                else {
+                    let table = '<table class="table table-striped"><thead> <tr><th>Course</th><th>Instructor</th> </tr> </thead><tbody>';
+                    courses.forEach(c => {
+                        const instructor = getInstructorById(c.instructorId);
+                        table += `<tr><td>${c.name} (${c.id})</td><td>${instructor ? instructor.name : 'Not assigned'}</td></tr>`;
+                    });
+                    table += '</tbody></table>';
+                    assignDiv.innerHTML = table;
+                }
+            }
+            const form = document.getElementById('assignForm');
+            if (form) {
+                form.onsubmit = function(e) {
+                    e.preventDefault();
+                    const courseId = document.getElementById('assignCourse').value;
+                    const instructorId = document.getElementById('assignInstructor').value;
+                    if (!courseId || !instructorId) { alert('Please select both.'); return; }
+                    const course = courses.find(c => c.id === courseId);
+                    if (course) {
+                        course.instructorId = instructorId;
+                        saveData();
+                        refreshStep2();
+                        alert('Assigned.');
+                    }
+                };
+            }
+        }
+
+        // --- Step3 (no department changes) ---
+        function refreshStep3() {
+            const pane = document.getElementById('step3');
+            if (!pane) return;
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">Define Assessments for a Course</div>
+                    <div class="card-body">
+                        <form id="assessmentForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Select Course</label>
+                                        <select id="assessmentCourse" class="form-control" required></select>
+                                    </div>
+                                    <div id="assessmentEntries">
+                                        <div class="assessment-row mb-2">
+                                            <input type="text" class="form-control" placeholder="Assessment type" style="display:inline-block; width:45%;">
+                                            <input type="number" class="form-control" placeholder="Max Score" style="display:inline-block; width:45%;">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="addAssessmentRow()">Add Another</button>
+                                    <button type="submit" class="btn btn-primary">Save Assessments</button>
+                                </div>
+                            </div>
+                        </form>
+                        <hr>
+                        <h5>Existing Assessments</h5>
+                        <div id="assessmentList"></div>
+                    </div>
+                </div>
+            `;
+            const courseSelect = document.getElementById('assessmentCourse');
+            if (courseSelect) courseSelect.innerHTML = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+            const assessDiv = document.getElementById('assessmentList');
+            if (assessDiv) {
+                let content = '';
+                courses.forEach(c => {
+                    const courseAssess = assessments.filter(a => a.courseId === c.id);
+                    content += `<h6>${c.name} (${c.id})</h6>`;
+                    if (courseAssess.length === 0) content += '<p>No assessments defined.</p>';
+                    else {
+                        content += '<table class="table table-sm"><thead> <tr><th>Type</th><th>Max Score</th> </tr> </thead><tbody>';
+                        courseAssess.forEach(a => content += `<tr><td>${a.type}</td><td>${a.maxScore}</td></tr>`);
+                        content += '</tbody></table>';
+                    }
+                });
+                assessDiv.innerHTML = content;
+            }
+            const form = document.getElementById('assessmentForm');
+            if (form) {
+                form.onsubmit = function(e) {
+                    e.preventDefault();
+                    const courseId = document.getElementById('assessmentCourse').value;
+                    if (!courseId) { alert('Select a course.'); return; }
+                    const rows = document.querySelectorAll('#assessmentEntries .assessment-row');
+                    const newAssessments = [];
+                    rows.forEach(row => {
+                        const type = row.querySelector('input[placeholder*="type"]').value.trim();
+                        const maxScore = parseFloat(row.querySelector('input[placeholder*="Max Score"]').value);
+                        if (type && !isNaN(maxScore) && maxScore > 0) newAssessments.push({ courseId, type, maxScore });
+                    });
+                    if (newAssessments.length === 0) { alert('Add at least one assessment.'); return; }
+                    assessments = assessments.filter(a => a.courseId !== courseId);
+                    assessments.push(...newAssessments);
+                    saveData();
+                    refreshStep3();
+                    alert('Assessments saved.');
+                };
+            }
+        }
+
+        // --- Step4 (marks entry) - show department in table ---
+        function refreshStep4() {
+            const pane = document.getElementById('step4');
+            if (!pane) return;
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">Enter Marks</div>
+                    <div class="card-body">
+                        <form id="marksSelectForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Instructor</label>
+                                        <select id="marksInstructor" class="form-control" required></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Course</label>
+                                        <select id="marksCourse" class="form-control" required disabled>
+                                            <option value="">Select instructor first</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Load Marks Entry Table</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="marksEntryTable" class="mt-4"></div>
+                    </div>
+                </div>
+            `;
+            const instructorSelect = document.getElementById('marksInstructor');
+            if (instructorSelect) instructorSelect.innerHTML = '<option value="">Select Instructor</option>' + instructors.map(i => `<option value="${i.id}">${i.name} (${i.id})</option>`).join('');
+            const marksCourseSelect = document.getElementById('marksCourse');
+            marksCourseSelect.innerHTML = '<option value="">Select instructor first</option>';
+            marksCourseSelect.disabled = true;
+            instructorSelect.onchange = function() {
+                const instructorId = this.value;
+                if (instructorId) {
+                    const instructorCourses = courses.filter(c => c.instructorId === instructorId);
+                    if (instructorCourses.length === 0) {
+                        marksCourseSelect.innerHTML = '<option value="">No courses assigned</option>';
+                        marksCourseSelect.disabled = true;
+                    } else {
+                        marksCourseSelect.innerHTML = '<option value="">Select Course</option>' + instructorCourses.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+                        marksCourseSelect.disabled = false;
+                    }
+                } else {
+                    marksCourseSelect.innerHTML = '<option value="">Select instructor first</option>';
+                    marksCourseSelect.disabled = true;
+                }
+            };
+            const selectForm = document.getElementById('marksSelectForm');
+            selectForm.onsubmit = function(e) {
+                e.preventDefault();
+                const instructorId = document.getElementById('marksInstructor').value;
+                const courseId = document.getElementById('marksCourse').value;
+                if (!instructorId || !courseId) { alert('Select instructor and course.'); return; }
+                loadMarksEntryTable(courseId, instructorId);
+            };
+        }
+
+        function loadMarksEntryTable(courseId, instructorId) {
+            const course = getCourseById(courseId);
+            const studentsInCourse = getEnrolledStudents(courseId);
+            const courseAssessments = getCourseAssessments(courseId);
+            const container = document.getElementById('marksEntryTable');
+            if (!studentsInCourse.length) { container.innerHTML = '<div class="alert alert-warning">No students enrolled.</div>'; return; }
+            if (!courseAssessments.length) { container.innerHTML = '<div class="alert alert-warning">No assessments defined.</div>'; return; }
+
+            let html = `<form id="marksSaveForm"><input type="hidden" name="courseId" value="${courseId}"><input type="hidden" name="instructorId" value="${instructorId}">`;
+            html += '<table class="table table-bordered"><thead> <tr><th>Student (Department)</th>';
+            courseAssessments.forEach(a => html += `<th>${a.type} (max ${a.maxScore})</th>`);
+            html += ' </tr></thead><tbody>';
+            studentsInCourse.forEach(student => {
+                html += `<tr><td>${student.name} (${student.id}) - ${student.department || 'N/A'}</td>`;
+                courseAssessments.forEach(a => {
+                    const existing = marks.find(m => m.studentId === student.id && m.courseId === courseId && m.assessmentType === a.type);
+                    const value = existing ? existing.score : '';
+                    html += `<td><input type="number" step="0.01" name="mark_${student.id}_${a.type}" class="form-control wide-input" value="${value}"></td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table><button type="submit" class="btn btn-primary">Save Marks</button></form>';
+            container.innerHTML = html;
+            const saveForm = document.getElementById('marksSaveForm');
+            saveForm.onsubmit = function(e) {
+                e.preventDefault();
+                const formData = new FormData(saveForm);
+                const courseId = formData.get('courseId');
+                for (let [key, value] of formData.entries()) {
+                    if (key.startsWith('mark_')) {
+                        const parts = key.split('_');
+                        const studentId = parts[1];
+                        const assessmentType = parts.slice(2).join('_');
+                        const score = parseFloat(value);
+                        if (!isNaN(score)) {
+                            const idx = marks.findIndex(m => m.studentId === studentId && m.courseId === courseId && m.assessmentType === assessmentType);
+                            if (idx !== -1) marks[idx].score = score;
+                            else marks.push({ studentId, courseId, assessmentType, score });
+                        }
+                    }
+                }
+                saveData();
+                alert('Marks saved.');
+                loadMarksEntryTable(courseId, instructorId);
+            };
+        }
+
+        // --- Step5 (grade calculation) - show department in table ---
+        function refreshStep5() {
+            const pane = document.getElementById('step5');
+            if (!pane) return;
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">Calculate Final Grades</div>
+                    <div class="card-body">
+                        <form id="calcForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Select Course</label>
+                                        <select id="calcCourse" class="form-control" required></select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Calculate Grades</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="calcResult" class="mt-3"></div>
+                    </div>
+                </div>
+            `;
+            const courseSelect = document.getElementById('calcCourse');
+            if (courseSelect) courseSelect.innerHTML = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+            const form = document.getElementById('calcForm');
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                const courseId = document.getElementById('calcCourse').value;
+                if (!courseId) { alert('Select a course.'); return; }
+                calculateGradesForCourse(courseId);
+            };
+        }
+
+        function calculateGradesForCourse(courseId) {
+            const assessments = getCourseAssessments(courseId);
+            const studentsInCourse = getEnrolledStudents(courseId);
+            const resultDiv = document.getElementById('calcResult');
+            if (!assessments.length) { resultDiv.innerHTML = '<div class="alert alert-warning">No assessments defined.</div>'; return; }
+            if (!studentsInCourse.length) { resultDiv.innerHTML = '<div class="alert alert-warning">No students enrolled.</div>'; return; }
+
+            grades = grades.filter(g => g.courseId !== courseId);
+            let html = '<h5>Calculated Grades</h5><table class="table table-striped"><thead> <tr><th>Student (Department)</th><th>Earned / Possible</th><th>Percentage</th><th>Grade</th> </tr></thead><tbody>';
+            studentsInCourse.forEach(student => {
+                let totalEarned = 0, totalPossible = 0, incomplete = false;
+                assessments.forEach(a => {
+                    const mark = marks.find(m => m.studentId === student.id && m.courseId === courseId && m.assessmentType === a.type);
+                    if (!mark) incomplete = true;
+                    else { totalEarned += mark.score; totalPossible += a.maxScore; }
+                });
+                let percentage = 0, letter = 'I';
+                if (!incomplete && totalPossible > 0) {
+                    percentage = (totalEarned / totalPossible) * 100;
+                    if (percentage >= 90) letter = 'A';
+                    else if (percentage >= 80) letter = 'B';
+                    else if (percentage >= 70) letter = 'C';
+                    else if (percentage >= 60) letter = 'D';
+                    else letter = 'F';
+                }
+                grades.push({ studentId: student.id, courseId, totalEarned, totalPossible, percentage, letterGrade: letter, status: 'draft' });
+                html += `<tr><td>${student.name} (${student.id}) - ${student.department || 'N/A'}</td><td>${incomplete ? 'Incomplete' : `${totalEarned}/${totalPossible}`}</td><td>${incomplete ? '-' : percentage.toFixed(2)}%</td><td>${letter}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            resultDiv.innerHTML = html;
+            saveData();
+        }
+
+        // --- Step6 (admin only) - no department changes, but student name includes department? optional ---
+        function refreshStep6() {
+            const pane = document.getElementById('step6');
+            if (!pane) return;
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">Verify and Approve Grades</div>
+                    <div class="card-body">
+                        <form id="approveForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Select Course</label>
+                                        <select id="approveCourse" class="form-control" required></select>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Approve Grades</button>
+                                </div>
+                            </div>
+                        </form>
+                        <hr>
+                        <h5>Current Grades by Course</h5>
+                        <div id="verifyTable"></div>
+                    </div>
+                </div>
+            `;
+            const approveCourse = document.getElementById('approveCourse');
+            if (approveCourse) approveCourse.innerHTML = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+            const verifyDiv = document.getElementById('verifyTable');
+            if (verifyDiv) {
+                if (!grades.length) verifyDiv.innerHTML = '<p>No grades calculated.</p>';
+                else {
+                    let content = '';
+                    courses.forEach(course => {
+                        const courseGrades = grades.filter(g => g.courseId === course.id);
+                        if (!courseGrades.length) return;
+                        content += `<h6>${course.name} (${course.id})</h6>`;
+                        content += '<table class="table table-sm"><thead> <tr><th>Student (Department)</th><th>Earned / Possible</th><th>Percentage</th><th>Grade</th><th>Status</th> </tr></thead><tbody>';
+                        courseGrades.forEach(g => {
+                            const student = getStudentById(g.studentId);
+                            content += `<tr><td>${student ? `${student.name} (${student.id}) - ${student.department || 'N/A'}` : g.studentId}</td><td>${g.totalEarned}/${g.totalPossible}</td><td>${g.percentage.toFixed(2)}%</td><td>${g.letterGrade}</td><td><span class="badge ${g.status === 'approved' ? 'bg-success' : (g.status === 'submitted' ? 'bg-secondary' : 'bg-warning')}">${g.status}</span></td></tr>`;
+                        });
+                        content += '</tbody></table>';
+                    });
+                    verifyDiv.innerHTML = content;
+                }
+            }
+            const form = document.getElementById('approveForm');
+            if (form) {
+                form.onsubmit = function(e) {
+                    e.preventDefault();
+                    const courseId = document.getElementById('approveCourse').value;
+                    if (!courseId) { alert('Select course.'); return; }
+                    let updated = false;
+                    grades.forEach(g => { if (g.courseId === courseId && g.status === 'draft') { g.status = 'approved'; updated = true; } });
+                    if (updated) { saveData(); alert('Grades approved.'); refreshStep6(); }
+                    else alert('No draft grades for this course.');
+                };
+            }
+        }
+
+        // --- Step7 (no department changes) ---
+        function refreshStep7() {
+            const pane = document.getElementById('step7');
+            if (!pane) return;
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">Submit Final Grades</div>
+                    <div class="card-body">
+                        <form id="submitForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Select Course</label>
+                                        <select id="submitCourse" class="form-control" required></select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Submit Grades</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="submitResult" class="mt-3"></div>
+                    </div>
+                </div>
+            `;
+            const courseSelect = document.getElementById('submitCourse');
+            if (courseSelect) courseSelect.innerHTML = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+            const form = document.getElementById('submitForm');
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                const courseId = document.getElementById('submitCourse').value;
+                if (!courseId) { alert('Select course.'); return; }
+                const courseGrades = grades.filter(g => g.courseId === courseId);
+                if (!courseGrades.length) { document.getElementById('submitResult').innerHTML = '<div class="alert alert-warning">No grades.</div>'; return; }
+                if (!courseGrades.every(g => g.status === 'approved')) {
+                    document.getElementById('submitResult').innerHTML = '<div class="alert alert-danger">Not all approved. Run step6 first.</div>';
+                    return;
+                }
+                courseGrades.forEach(g => g.status = 'submitted');
+                saveData();
+                document.getElementById('submitResult').innerHTML = '<div class="alert alert-success">Grades submitted and locked.</div>';
+            };
+        }
+
+        // --- Step8 (results) - show department ---
+        function refreshStep8() {
+            const pane = document.getElementById('step8');
+            if (!pane) return;
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">View Your Results</div>
+                    <div class="card-body">
+                        <form id="resultForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Student ID</label>
+                                        <input type="text" id="resultStudentId" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Show Results</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="resultDisplay" class="mt-4"></div>
+                    </div>
+                </div>
+            `;
+            const form = document.getElementById('resultForm');
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                const studentId = document.getElementById('resultStudentId').value.trim();
+                if (!studentId) { alert('Enter student ID.'); return; }
+                const student = getStudentById(studentId);
+                if (!student) { document.getElementById('resultDisplay').innerHTML = '<div class="alert alert-danger">Student not found.</div>'; return; }
+                const studentGrades = grades.filter(g => g.studentId === studentId && g.status === 'submitted');
+                if (!studentGrades.length) { document.getElementById('resultDisplay').innerHTML = '<div class="alert alert-info">No final grades.</div>'; return; }
+                let html = `<h5>Results for ${student.name} (${student.id}) - ${student.department || 'N/A'}</h5><table class="table"><thead> <tr><th>Course</th><th>Earned / Possible</th><th>Percentage</th><th>Grade</th> </tr></thead><tbody>`;
+                studentGrades.forEach(g => {
+                    const course = getCourseById(g.courseId);
+                    html += `<tr><td>${course ? course.name : g.courseId}</td><td>${g.totalEarned}/${g.totalPossible}</td><td>${g.percentage.toFixed(2)}%</td><td>${g.letterGrade}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                document.getElementById('resultDisplay').innerHTML = html;
+            };
+        }
+
+        // --- Step9 (report) - show department ---
+        function refreshStep9() {
+            const pane = document.getElementById('step9');
+            if (!pane) return;
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">Generate Transcript & GPA</div>
+                    <div class="card-body">
+                        <form id="reportForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Student ID</label>
+                                        <input type="text" id="reportStudentId" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Generate Report</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="reportDisplay" class="mt-4"></div>
+                    </div>
+                </div>
+            `;
+            const form = document.getElementById('reportForm');
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                const studentId = document.getElementById('reportStudentId').value.trim();
+                if (!studentId) { alert('Enter student ID.'); return; }
+                const student = getStudentById(studentId);
+                if (!student) { document.getElementById('reportDisplay').innerHTML = '<div class="alert alert-danger">Student not found.</div>'; return; }
+                const studentGrades = grades.filter(g => g.studentId === studentId && g.status === 'submitted');
+                if (!studentGrades.length) { document.getElementById('reportDisplay').innerHTML = '<div class="alert alert-info">No final grades.</div>'; return; }
+                const gradePoints = { 'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0, 'I': 0.0 };
+                let totalPoints = 0;
+                let html = `<h5>Transcript for ${student.name} (${student.id}) - ${student.department || 'N/A'}</h5><table class="table"><thead> <tr><th>Course</th><th>Grade</th><th>Grade Points</th> </tr></thead><tbody>`;
+                studentGrades.forEach(g => {
+                    const points = gradePoints[g.letterGrade] || 0;
+                    totalPoints += points;
+                    const course = getCourseById(g.courseId);
+                    html += `<tr><td>${course ? course.name : g.courseId}</td><td>${g.letterGrade}</td><td>${points}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                const gpa = totalPoints / studentGrades.length;
+                html += `<p><strong>GPA:</strong> ${gpa.toFixed(2)}</p>`;
+                document.getElementById('reportDisplay').innerHTML = html;
+            };
+        }
+
+        // --- Messages (instructor) - show department in message details ---
+        function refreshMessages() {
+            const pane = document.getElementById('messages');
+            if (!pane) return;
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">Grade Error Reports</div>
+                    <div class="card-body">
+                        <div id="messageList"></div>
+                    </div>
+                </div>
+            `;
+            const container = document.getElementById('messageList');
+            if (!messages.length) { container.innerHTML = '<p>No messages.</p>'; return; }
+            let content = '';
+            messages.forEach(msg => {
+                const student = getStudentById(msg.studentId);
+                const course = getCourseById(msg.courseId);
+                content += `
+                    <div class="message-item">
+                        <strong>From:</strong> ${student ? `${student.name} (${student.id}) - ${student.department || 'N/A'}` : msg.studentId}<br>
+                        <strong>Course:</strong> ${course ? course.name : msg.courseId}<br>
+                        <strong>Message:</strong> ${msg.message}<br>
+                        <strong>Status:</strong> ${msg.status}<br>
+                        <button class="btn btn-sm btn-primary" onclick="resolveMessage('${msg.id}', '${msg.courseId}', '${msg.studentId}')">Fix Grade & Mark Resolved</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = content;
+        }
+
+        // --- Report Issue (student) - no change needed ---
+        function refreshReportIssue() {
+            const pane = document.getElementById('reportIssue');
+            if (!pane) return;
+            pane.innerHTML = `
+                <div class="card">
+                    <div class="card-header">Report a Grade Issue</div>
+                    <div class="card-body">
+                        <form id="issueForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Select Course</label>
+                                        <select id="issueCourse" class="form-control" required></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Describe the error</label>
+                                        <textarea id="issueMessage" class="form-control" rows="3" required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Send Report</button>
+                                </div>
+                            </div>
+                        </form>
+                        <hr>
+                        <h5>Your Previous Reports</h5>
+                        <div id="myMessages"></div>
+                    </div>
+                </div>
+            `;
+            const studentId = currentUser.username;
+            const studentEnrollments = enrollments.filter(e => e.studentId === studentId);
+            const studentCourses = studentEnrollments.map(e => getCourseById(e.courseId)).filter(c => c);
+            const courseSelect = document.getElementById('issueCourse');
+            if (courseSelect) {
+                courseSelect.innerHTML = '<option value="">Select Course</option>' + studentCourses.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+            }
+            const myMsgs = messages.filter(m => m.studentId === studentId);
+            const msgContainer = document.getElementById('myMessages');
+            if (myMsgs.length === 0) msgContainer.innerHTML = '<p>No reports yet.</p>';
+            else {
+                let content = '<table class="table"><thead> <tr><th>Course</th><th>Message</th><th>Status</th> </tr></thead><tbody>';
+                myMsgs.forEach(msg => {
+                    const course = getCourseById(msg.courseId);
+                    content += `<tr><td>${course ? course.name : msg.courseId}</td><td>${msg.message}</td><td>${msg.status}</td></tr>`;
+                });
+                content += '</tbody></table>';
+                msgContainer.innerHTML = content;
+            }
+            const form = document.getElementById('issueForm');
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                const courseId = document.getElementById('issueCourse').value;
+                const message = document.getElementById('issueMessage').value.trim();
+                if (!courseId || !message) { alert('Please fill all fields.'); return; }
+                const newMsg = {
+                    id: Date.now().toString(),
+                    studentId: currentUser.username,
+                    courseId,
+                    message,
+                    status: 'pending'
+                };
+                messages.push(newMsg);
+                saveData();
+                alert('Report sent to instructor.');
+                refreshReportIssue();
+                document.getElementById('issueMessage').value = '';
+            };
+        }
+
+        // --- Resolve message (instructor) - unchanged ---
+        function resolveMessage(msgId, courseId, studentId) {
+            const assessments = getCourseAssessments(courseId);
+            if (!assessments.length) { alert('No assessments defined for this course.'); return; }
+            let promptMsg = 'Enter updated marks:\n';
+            assessments.forEach(a => {
+                const existing = marks.find(m => m.studentId === studentId && m.courseId === courseId && m.assessmentType === a.type);
+                const current = existing ? existing.score : 0;
+                promptMsg += `${a.type} (max ${a.maxScore}, current ${current}): `;
+            });
+            const updatedScores = {};
+            for (let a of assessments) {
+                let newScore = prompt(`Enter new score for ${a.type} (max ${a.maxScore}):`, marks.find(m => m.studentId === studentId && m.courseId === courseId && m.assessmentType === a.type)?.score || 0);
+                if (newScore !== null) {
+                    let num = parseFloat(newScore);
+                    if (!isNaN(num) && num >= 0 && num <= a.maxScore) updatedScores[a.type] = num;
+                }
+            }
+            for (let [type, score] of Object.entries(updatedScores)) {
+                const idx = marks.findIndex(m => m.studentId === studentId && m.courseId === courseId && m.assessmentType === type);
+                if (idx !== -1) marks[idx].score = score;
+                else marks.push({ studentId, courseId, assessmentType: type, score });
+            }
+            saveData();
+            calculateGradesForCourse(courseId);
+            const msgIdx = messages.findIndex(m => m.id === msgId);
+            if (msgIdx !== -1) messages[msgIdx].status = 'resolved';
+            saveData();
+            alert('Grades updated and message marked resolved.');
+            refreshMessages();
+        }
+
+        // --- Refresh all (called after data changes) ---
+        function refreshAll() {
+            if (!currentUser) return;
+            // Refresh each tab content
+            if (currentUser.role === 'admin') {
+                refreshStep1(); refreshStep2(); refreshStep3(); refreshStep4(); refreshStep5();
+                refreshStep6(); refreshStep7(); refreshStep8(); refreshStep9();
+            } else if (currentUser.role === 'instructor') {
+                refreshStep1(); refreshStep2(); refreshStep3(); refreshStep4(); refreshStep5(); refreshStep7();
+                refreshMessages();
+            } else if (currentUser.role === 'student') {
+                refreshStep8(); refreshReportIssue();
+            }
+        }
+
+        // --- Export/Import functions (global) ---
+        function exportData() {
+            const data = { students, courses, instructors, enrollments, assessments, marks, grades, messages, departments };
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `academic_backup_${new Date().toISOString().slice(0,19)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    try {
+                        const imported = JSON.parse(ev.target.result);
+                        students = imported.students || [];
+                        courses = imported.courses || [];
+                        instructors = imported.instructors || [];
+                        enrollments = imported.enrollments || [];
+                        assessments = imported.assessments || [];
+                        marks = imported.marks || [];
+                        grades = imported.grades || [];
+                        messages = imported.messages || [];
+                        departments = imported.departments || [];
+                        saveData();
+                        refreshAll();
+                        alert('Data imported successfully.');
+                    } catch (err) { alert('Invalid file format.'); }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ This will erase all data. Are you sure?')) {
+                localStorage.clear();
+                loadData();
+                initSampleData();
+                refreshAll();
+                alert('All data cleared. Sample courses/instructors/departments recreated.');
+            }
+        }
+
+        // --- Login handler ---
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const role = document.getElementById('loginRole').value;
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            if (login(role, username, password)) {
+                loadData();
+                initSampleData();
+                buildUI();
+            } else {
+                alert('Invalid credentials. For student, use an existing student ID.');
+            }
+        });
+
+        // Make functions global for inline onclick
+        window.exportData = exportData;
+        window.importData = importData;
+        window.clearAllData = clearAllData;
+        window.logout = logout;
+        window.resolveMessage = resolveMessage;
+        window.addAssessmentRow = function() {
+            const container = document.getElementById('assessmentEntries');
+            if (!container) return;
+            const newRow = document.createElement('div');
+            newRow.className = 'assessment-row mb-2';
+            newRow.innerHTML = `
+                <input type="text" class="form-control" placeholder="Assessment type" style="display:inline-block; width:45%;">
+                <input type="number" class="form-control" placeholder="Max Score" style="display:inline-block; width:45%;">
+            `;
+            container.appendChild(newRow);
+        };
+
+        // Initial load (no user yet, show login)
+        loadData();
+        initSampleData();
+    </script>
+</body>
+</html>
